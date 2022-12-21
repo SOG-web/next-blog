@@ -16,11 +16,17 @@
 
 import fs from 'fs';
 import matter from 'gray-matter';
-import React from 'react';
-import { PostMetadata } from '../lib/postMetadata';
-import PostPreview from './components/PostPreview';
+import Markdown from 'markdown-to-jsx';
 
-const getPostMetadata = (): PostMetadata[] => {
+const getPostContent = (slug: string) => {
+  const file = `posts/${slug}.md`;
+  const content = fs.readFileSync(file, 'utf8');
+  const matterResult = matter(content);
+
+  return matterResult;
+};
+
+export const generateStaticParams = async () => {
   const files = fs.readdirSync('posts/');
   const markdownFiles = files.filter((file) => file.endsWith('.md'));
 
@@ -36,16 +42,26 @@ const getPostMetadata = (): PostMetadata[] => {
     };
   });
 
-  return posts;
+  return posts.map((post) => {
+    return {
+      slug: post.slug,
+    };
+  });
 };
 
-export default function Home() {
-  const postMetadata = getPostMetadata();
-  const postPreviews = postMetadata.map((post, index) => {
-    return <PostPreview key={index} {...post} />;
-  });
+const Post = (props: any) => {
+  const slug = props.params.slug;
+
+  const post = getPostContent(slug);
 
   return (
-    <div className='grid grid-cols-1 md:grid-cols-2 gap-4'>{postPreviews}</div>
+    <div>
+      <h1 className='text-2xl text-violet-600'>{post.data.title}</h1>
+      <article className='prose lg:prose-xl'>
+        <Markdown>{post.content}</Markdown>
+      </article>
+    </div>
   );
-}
+};
+
+export default Post;
